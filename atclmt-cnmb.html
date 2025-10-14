@@ -221,7 +221,7 @@
         #summaryDetailModal .modal-content { max-width: 95%; }
         .summary-details-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
@@ -236,19 +236,60 @@
             color: #007bff;
             border-bottom: 2px solid #007bff;
             padding-bottom: 8px;
+            font-size: 1.1rem;
         }
-        .summary-parent-card p {
-            margin: 8px 0;
+        .summary-columns-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .summary-info-column {
+            width: 50%;
+            font-size: 14px;
+        }
+        .summary-info-column h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #495057;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 4px;
+            font-size: 15px;
+        }
+        .summary-info-column p {
+            margin: 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             display: flex;
             justify-content: space-between;
         }
-        .summary-parent-card p strong {
+        .summary-info-column p strong {
             color: #495057;
         }
         .summary-parent-card .value {
             font-weight: bold;
             color: #333;
         }
+        .summary-charts-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .chart-wrapper {
+            width: 45%;
+            max-width: 150px;
+            text-align: center;
+        }
+        .chart-wrapper p {
+            font-size: 12px;
+            margin-top: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
 
         @media screen and (max-width: 768px) {
             .responsive-modal-table thead { display: none; }
@@ -277,6 +318,7 @@
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -316,7 +358,7 @@
         <div id="status"></div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-            <h2>Danh mục AT-CL-MT tại Chi nhánh Miền Bắc</h2>
+            <h2>Các đơn vị thuộc Chi nhánh Miền Bắc</h2>
              <div>
                 <label for="yearSelect" style="margin-right: 10px; font-weight: bold;">Năm:</label>
                 <select id="yearSelect" onchange="changeYear(this.value)"></select>
@@ -513,6 +555,8 @@
         let planningModeByYear = {};
         let isAuthenticated = false;
         let activeExportType = 'simplified';
+        let activeCharts = [];
+
 
         const loginContainer = document.getElementById('login-container');
         const mainContainer = document.getElementById('container');
@@ -1908,6 +1952,8 @@
         }
         window.closeAllModals = () => {
             document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
+            activeCharts.forEach(chart => chart.destroy());
+            activeCharts = [];
             const toggleDiv = document.getElementById('editModeToggle');
             if (toggleDiv) {
                 toggleDiv.style.display = 'none';
@@ -1958,18 +2004,119 @@
                     htmlContent += `
                         <div class="summary-parent-card">
                             <h3>${parentId}. ${name}</h3>
-                            <p><strong>Số đầu việc đã lên KH:</strong> <span class="value">${totalLeafNodes}</span></p>
-                            <p><strong>Số đầu việc đã thực hiện:</strong> <span class="value">${executedLeafNodes} <span class="percentage">(${leafPercentage}%)</span></span></p>
-                            <p><strong>Số đầu việc cấp độ 1:</strong> <span class="value">${totalLeafNodesCap1}</span></p>
-                            <p><strong>Số ĐV cấp độ 1 đã thực hiện:</strong> <span class="value">${executedLeafNodesCap1} <span class="percentage">(${cap1Percentage}%)</span></span></p>
-                            <p><strong>Tổng chi phí kế hoạch:</strong> <span class="value">${formatNumber(plannedCost)}</span></p>
-                            <p><strong>Tổng chi phí đã thực hiện:</strong> <span class="value">${formatNumber(executedCost)} <span class="percentage">(${costPercentage}%)</span></span></p>
+                            <div class="summary-columns-container">
+                                <div class="summary-info-column">
+                                    <h4>Kế hoạch</h4>
+                                    <p><strong>Số đầu việc KH:</strong> <span class="value">${totalLeafNodes}</span></p>
+                                    <p><strong>Số ĐV cấp 1:</strong> <span class="value">${totalLeafNodesCap1}</span></p>
+                                    <p><strong>Chi phí KH:</strong> <span class="value">${formatNumber(plannedCost)}</span></p>
+                                </div>
+                                <div class="summary-info-column">
+                                    <h4>Thực hiện</h4>
+                                    <p><strong>Số đầu việc TH:</strong> <span class="value">${executedLeafNodes} <span class="percentage">(${leafPercentage}%)</span></span></p>
+                                    <p><strong>Số ĐV cấp 1 TH:</strong> <span class="value">${executedLeafNodesCap1} <span class="percentage">(${cap1Percentage}%)</span></span></p>
+                                    <p><strong>Chi phí TH:</strong> <span class="value">${formatNumber(executedCost)} <span class="percentage">(${costPercentage}%)</span></span></p>
+                                </div>
+                            </div>
+                            <div class="summary-charts-container">
+                                <div class="chart-wrapper">
+                                    <canvas id="cap1Chart-${parentId}"></canvas>
+                                    <p>Tỷ lệ ĐV Cấp 1</p>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="costChart-${parentId}"></canvas>
+                                    <p>Tỷ lệ Chi phí</p>
+                                </div>
+                            </div>
                         </div>
                     `;
                 }
                 
                 contentContainer.innerHTML = htmlContent || '<p>Không có dữ liệu chi tiết để hiển thị.</p>';
                 modal.style.display = 'block';
+
+                // Now, render the charts
+                activeCharts.forEach(chart => chart.destroy());
+                activeCharts = [];
+
+                for (const parent of parents) {
+                    const parentId = parent.id;
+                    const parentSummary = summaryData[parentId] || {};
+
+                    const totalLeafNodesCap1 = parentSummary.totalLeafNodesCap1 || 0;
+                    const executedLeafNodesCap1 = parentSummary.totalExecutedLeafNodesCap1 || 0;
+                    const plannedCost = parentSummary.totalPlannedCost || 0;
+                    const executedCost = parentSummary.totalExecutedCost || 0;
+
+                    // Chart 1: Cap 1 Task Completion
+                    const cap1Ctx = document.getElementById(`cap1Chart-${parentId}`).getContext('2d');
+                    const cap1Chart = new Chart(cap1Ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Đã thực hiện', 'Chưa thực hiện'],
+                            datasets: [{
+                                data: [executedLeafNodesCap1, totalLeafNodesCap1 - executedLeafNodesCap1],
+                                backgroundColor: ['#28a745', '#e9ecef'],
+                                borderColor: ['#28a745', '#e9ecef'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.parsed !== null) {
+                                                label += context.parsed + ' đầu việc';
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    activeCharts.push(cap1Chart);
+
+                    // Chart 2: Cost Execution
+                    const costCtx = document.getElementById(`costChart-${parentId}`).getContext('2d');
+                     const costChart = new Chart(costCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Đã thực hiện', 'Còn lại'],
+                            datasets: [{
+                                data: [executedCost, plannedCost > executedCost ? plannedCost - executedCost : 0],
+                                backgroundColor: ['#007bff', '#e9ecef'],
+                                borderColor: ['#007bff', '#e9ecef'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.parsed !== null) {
+                                                label += formatNumber(context.parsed);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    activeCharts.push(costChart);
+                }
+
                 statusDiv.innerText = '';
             } catch (error) {
                 console.error("Lỗi khi mở modal chi tiết:", error);
