@@ -6212,7 +6212,7 @@ const recalculateSingleParentCost = async (parentPath, childrenField = null, fie
                 <td class="col-nam-phanbo editable-cell" data-field="namPhanBo">${data.namPhanBo || ''}</td>
                 <td class="col-chiphi-phanbo">${formatNumber(data.chiPhiPhanBo)}</td>
                 <td class="col-capdo editable-cell" data-field="capDo">${data.capDo || ''}</td>
-			//<td class="col-cp-cap1">${formatNumber(data.cpCap1)}</td>	
+			
                 <td class="col-tg-batdau editable-cell" data-field="tgBatDau">${data.tgBatDau || ''}</td>
                 <td class="col-tg-hoanthanh editable-cell" data-field="tgHoanThanh">${data.tgHoanThanh || ''}</td>
                 <td class="col-ghichu editable-cell" data-field="ghiChu">${data.ghiChu || ''}</td>
@@ -6584,6 +6584,7 @@ parentData.tgBatDau = parentSummary.totalExecutedLeafNodesCap1 || 0;
             input.addEventListener('keydown', handleKeydown);
         });
     };
+
 
 
 
