@@ -6298,7 +6298,7 @@ parentData.tgBatDau = parentSummary.totalExecutedLeafNodesCap1 || 0;
                                                 <td class="text-right col-chiphi-thuchien"></td><td class="text-right col-kehoach-conlai"></td>
                                                 <td class="col-nam-phanbo"></td><td class="col-chiphi-phanbo"></td>
                                                 <td class="col-capdo"></td>
-										//<td class="col-cp-cap1"></td> 		
+												
 												<td class="col-tg-batdau"></td><td class="col-tg-hoanthanh"></td>
                                                 <td class="col-ghichu editable-cell" data-field="ghiChu">${justData.ghiChu || ''}</td>
                                                 <td class="col-hoso"></td>
@@ -6321,7 +6321,7 @@ parentData.tgBatDau = parentSummary.totalExecutedLeafNodesCap1 || 0;
                                                         <td class="text-right col-chiphi-thuchien"></td><td class="text-right col-kehoach-conlai"></td>
                                                         <td class="col-nam-phanbo"></td><td class="col-chiphi-phanbo"></td>
                                                         <td class="col-capdo"></td>
-													// <td class="col-cp-cap1"></td> 	
+													
 														<td class="col-tg-batdau"></td><td class="col-tg-hoanthanh"></td>
                                                         <td class="col-ghichu editable-cell" data-field="ghiChu">${subJust.ghiChu || ''}</td>
                                                         <td class="col-hoso"></td>
@@ -6584,6 +6584,7 @@ parentData.tgBatDau = parentSummary.totalExecutedLeafNodesCap1 || 0;
             input.addEventListener('keydown', handleKeydown);
         });
     };
+
 
 
 
